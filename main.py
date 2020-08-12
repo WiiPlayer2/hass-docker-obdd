@@ -6,10 +6,12 @@ import json
 
 from typing import List, Sequence, IO
 
+from .commands import commands as additional_commands
+
 TCP_IP = '127.0.0.1'
 TCP_PORT = 2948
 BUFFER_SIZE = 1024
-OBD_DEVICE = 'COM9'
+OBD_DEVICE = '/dev/rfcomm0'
 OBD_CMD_MODES = [1, 2, 3]
 
 connections: List[IO] = []
@@ -20,7 +22,7 @@ def handle_client(conn: socket.socket, addr):
     connections.append(conn_io)
 
 def filter_obd_commands(commands: Sequence[obd.OBDCommand]):
-    return [cmd for cmd in commands if cmd.mode in OBD_CMD_MODES]
+    return [cmd for cmd in commands if cmd.mode in OBD_CMD_MODES] + additional_commands
 
 def callback_obd_value(cmd):
     def callback(value):

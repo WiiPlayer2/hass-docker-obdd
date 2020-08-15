@@ -16,7 +16,7 @@ OBD_WATCH_COMMANDS = [s.strip() for s in os.environ.get('OBD_WATCH_COMMANDS', ',
     'RPM',
 ])).split(',')]
 NODE_ID = os.environ.get('NODE_ID', 'car')
-CHECK_INTERVAL = 15
+CHECK_INTERVAL = float(os.environ.get('CHECK_INTERVAL', '30'))
 
 class ObdService():
     def loop_start(self, mqtt_client, watch_commands):

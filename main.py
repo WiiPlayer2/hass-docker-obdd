@@ -6,7 +6,7 @@ import threading
 
 from commands import all_commands
 
-IGNORE_OBD_CONNECTION = os.environ.get('IGNORE_OBD_CONNECTION', 'True') == 'True'
+IGNORE_OBD_CONNECTION = os.environ.get('IGNORE_OBD_CONNECTION', 'True') == 'Tru'
 MQTT_BROKER = os.environ.get('MQTT_BROKER', '192.168.1.2')
 MQTT_CLIENT_NAME = os.environ.get('MQTT_CLIENT_NAME', 'obd-service')
 HASS_DISCOVERY_PREFIX = os.environ.get('HASS_DISCOVERY_PREFIX', 'homeassistant')
@@ -16,6 +16,7 @@ OBD_WATCH_COMMANDS = [s.strip() for s in os.environ.get('OBD_WATCH_COMMANDS', ',
     'RPM',
 ])).split(',')]
 NODE_ID = os.environ.get('NODE_ID', 'car')
+CHECK_INTERVAL = 15
 
 class ObdService():
     def loop_start(self, mqtt_client, watch_commands):
@@ -32,7 +33,7 @@ class ObdService():
                 except:
                     pass
                 if not is_connected:
-                    time.sleep(5)
+                    time.sleep(CHECK_INTERVAL)
 
             cmds = [cmd for cmd in watch_commands if cmd.cmd in conn.supported_commands]
             for cmd in cmds:
@@ -40,7 +41,7 @@ class ObdService():
             conn.start()
 
             while is_connected:
-                time.sleep(5)
+                time.sleep(CHECK_INTERVAL)
                 try:
                     is_connected = conn.status() == obd.OBDStatus.CAR_CONNECTED or IGNORE_OBD_CONNECTION
                 except:

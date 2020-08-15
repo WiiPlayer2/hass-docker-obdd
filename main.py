@@ -54,7 +54,15 @@ if __name__ == '__main__':
 
     client = mqtt.Client(MQTT_CLIENT_NAME)
     client.username_pw_set('car', 'car')
-    client.connect(MQTT_BROKER)
+
+    is_connected = False
+    while not is_connected:
+        try:
+            client.connect(MQTT_BROKER)
+            is_connected = True
+        except:
+            is_connected = False
+            time.sleep(CHECK_INTERVAL)
 
     obd_service = ObdService()
     obd_service.loop_start(client, watch_commands)

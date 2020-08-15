@@ -1,65 +1,29 @@
-import socket
-import threading
+import paho.mqtt.client as mqtt
 import obd
-import signal
-import json
+import os
 
-from typing import List, Sequence, IO
+from commands import all_commands
 
-from .commands import commands as additional_commands
-
-TCP_IP = '127.0.0.1'
-TCP_PORT = 2948
-BUFFER_SIZE = 1024
-OBD_DEVICE = '/dev/rfcomm0'
-OBD_CMD_MODES = [1, 2, 3]
-
-connections: List[IO] = []
-
-def handle_client(conn: socket.socket, addr):
-    print(f'Handling {addr}')
-    conn_io = conn.makefile('w')
-    connections.append(conn_io)
-
-def filter_obd_commands(commands: Sequence[obd.OBDCommand]):
-    return [cmd for cmd in commands if cmd.mode in OBD_CMD_MODES] + additional_commands
-
-def callback_obd_value(cmd):
-    def callback(value):
-        data = json.dumps({
-                'cmd': cmd,
-                'value': value
-            })
-        for c in connections:
-            c.write(f'{data}\n')
-    return callback
-
-def run_obd_connection() -> obd.Async:
-    conn = obd.Async(OBD_DEVICE)
-    cmds = filter_obd_commands(conn.supported_commands)
-    for cmd in cmds:
-        conn.watch(cmd, callback=callback_obd_value(cmd))
-    conn.start()
-    return conn
-
-def run_server():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((TCP_IP, TCP_PORT))
-    s.listen(10)
-
-    while True:
-        conn, addr = s.accept()
-        # threading.Thread(target=handle_client, args=(conn, addr)).run()
-        handle_client(conn, addr)
-
-def signal_handler(signal, frame):
-    print(f'Signalled ({signal}, {frame})')
+MQTT_BROKER = os.environ.get('MQTT_BROKER', '192.168.1.102')
+MQTT_CLIENT_NAME = os.environ.get('MQTT_CLIENT_NAME', 'obd-service')
+HASS_DISCOVERY_PREFIX = os.environ.get('HASS_DISCOVERY_PREFIX', 'homeassistant')
+OBD_WATCH_COMMANDS = [s.strip() for s in os.environ.get('OBD_WATCH_COMMANDS', ', '.join([
+    'ELM_VERSION',
+    'ELM_VOLTAGE',
+    'RPM',
+])).split(',')]
+NODE_ID = os.environ.get('NODE_ID', 'car')
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
+    conn = obd.Async()
+    cmds = [cmd for cmd in all_commands if cmd.name in OBD_WATCH_COMMANDS and cmd.cmd in conn.supported_commands]
 
-    obd_conn = run_obd_connection()
-    threading.Thread(target=run_server).run()
+    client = mqtt.Client(MQTT_CLIENT_NAME)
+    client.username_pw_set('car', 'car')
+    client.connect(MQTT_BROKER)
 
-    signal.pause()
-    obd_conn.close()
+    for cmd in cmds:
+        cmd.register(HASS_DISCOVERY_PREFIX, NODE_ID, client, conn)
+    conn.start()
+
+    client.loop_forever()

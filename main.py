@@ -4,7 +4,7 @@ import os
 import time
 import threading
 
-from commands import get_all_sensors
+from sensors import get_all_sensors
 
 IGNORE_OBD_CONNECTION = os.environ.get('IGNORE_OBD_CONNECTION', 'True') == 'True'
 MQTT_BROKER = os.environ.get('MQTT_BROKER', '192.168.1.2')
@@ -19,10 +19,10 @@ NODE_ID = os.environ.get('NODE_ID', 'car')
 CHECK_INTERVAL = float(os.environ.get('CHECK_INTERVAL', '30'))
 
 class ObdService():
-    def loop_start(self, mqtt_client, watch_commands):
-        threading.Thread(target=self._loop, args=(mqtt_client, watch_commands)).run()
+    def loop_start(self, mqtt_client, watch_sensors):
+        threading.Thread(target=self._loop, args=(mqtt_client, watch_sensors)).run()
 
-    def _loop(self, mqtt_client, watch_commands):
+    def _loop(self, mqtt_client, watch_sensors):
         conn = None
         is_connected = False
         while True:
@@ -35,9 +35,9 @@ class ObdService():
                 if not is_connected:
                     time.sleep(CHECK_INTERVAL)
 
-            cmds = [cmd for cmd in watch_commands if cmd.cmd in conn.supported_commands]
-            for cmd in cmds:
-                cmd.register(HASS_DISCOVERY_PREFIX, client, conn)
+            sensors = [sensor for sensor in watch_sensors if sensor.cmd in conn.supported_commands]
+            for sensor in sensors:
+                sensor.register(HASS_DISCOVERY_PREFIX, client, conn)
             conn.start()
 
             while is_connected:
@@ -50,7 +50,7 @@ class ObdService():
 
 
 if __name__ == '__main__':
-    watch_commands = [cmd for cmd in get_all_sensors(NODE_ID) if cmd.name in OBD_WATCH_COMMANDS]
+    watch_sensors = [sensor for sensor in get_all_sensors(NODE_ID) if sensor.name in OBD_WATCH_COMMANDS]
 
     client = mqtt.Client(MQTT_CLIENT_NAME)
     client.username_pw_set('car', 'car')
@@ -65,6 +65,6 @@ if __name__ == '__main__':
             time.sleep(CHECK_INTERVAL)
 
     obd_service = ObdService()
-    obd_service.loop_start(client, watch_commands)
+    obd_service.loop_start(client, watch_sensors)
 
     client.loop_forever()

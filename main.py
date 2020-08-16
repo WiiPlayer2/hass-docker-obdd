@@ -13,11 +13,7 @@ IGNORE_OBD_CONNECTION = os.environ.get('IGNORE_OBD_CONNECTION', 'True') == 'True
 MQTT_BROKER = os.environ.get('MQTT_BROKER', '192.168.1.2')
 MQTT_CLIENT_NAME = os.environ.get('MQTT_CLIENT_NAME', 'obd-service-debug')
 HASS_DISCOVERY_PREFIX = os.environ.get('HASS_DISCOVERY_PREFIX', 'homeassistant')
-OBD_WATCH_COMMANDS = [s.strip() for s in os.environ.get('OBD_WATCH_COMMANDS', ', '.join([
-    'ELM_VERSION',
-    'ELM_VOLTAGE',
-    'RPM',
-])).split(',')]
+OBD_WATCH_COMMANDS = [s.strip() for s in os.environ.get('OBD_WATCH_COMMANDS', '').split(',') if s]
 NODE_ID = os.environ.get('NODE_ID', 'car')
 CHECK_INTERVAL = float(os.environ.get('CHECK_INTERVAL', '5'))
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')
@@ -88,7 +84,8 @@ if __name__ == '__main__':
         )
 
     logger.info('Starting...')
-    watch_sensors = [sensor for sensor in get_all_sensors(NODE_ID) if sensor.name in OBD_WATCH_COMMANDS]
+    all_sensors = get_all_sensors(NODE_ID)
+    watch_sensors = [sensor for sensor in get_all_sensors(NODE_ID) if sensor.name in OBD_WATCH_COMMANDS] if len(OBD_WATCH_COMMANDS) > 0 else all_sensors
 
     logger.info('Connecting to MQTT broker...')
     client = mqtt.Client(MQTT_CLIENT_NAME)

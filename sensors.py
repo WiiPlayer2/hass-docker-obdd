@@ -127,5 +127,14 @@ def get_all_sensors(node_id: str):
     return [
         RawObdSensor(node_id, 'ELM_VERSION', cmds.ELM_VERSION),
         UnitObdSensor(node_id, 'ELM_VOLTAGE', cmds.ELM_VOLTAGE, units.volt),
+        UnitObdSensor(node_id, 'ENGINE_LOAD', cmds.ENGINE_LOAD, units.percent),
+        UnitObdSensor(node_id, 'INTAKE_PRESSURE', cmds.INTAKE_PRESSURE, units.kilopascal, 'pressure'),
         UnitObdSensor(node_id, 'RPM', cmds.RPM, units.rpm),
+        UnitObdSensor(node_id, 'SPEED', cmds.SPEED, units.kph),
+        UnitObdSensor(node_id, 'INTAKE_TEMP', cmds.INTAKE_TEMP, units.celsius, 'temperature'),
+        UnitObdSensor(node_id, 'THROTTLE_POS', cmds.THROTTLE_POS, units.percent),
+        UnitObdSensor(node_id, 'RUN_TIME', cmds.RUN_TIME, units.second),
+        UnitObdSensor(node_id, 'ABSOLUTE_LOAD', cmds.ABSOLUTE_LOAD, units.percent),
+        UnitObdSensor(node_id, 'RELATIVE_THROTTLE_POS', cmds.RELATIVE_THROTTLE_POS, units.percent),
+        UnitObdSensor(node_id, 'HYBRID_BATTERY_REMAINING', cmds.HYBRID_BATTERY_REMAINING, units.percent, 'battery'),
     ]

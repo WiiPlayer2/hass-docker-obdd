@@ -64,10 +64,10 @@ class ObdService():
 
 
 if __name__ == '__main__':
-    logger.setLevel(LOG_LEVEL)
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("[%(name)s] %(message)s"))
-    logger.addHandler(handler)
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format="[%(asctime)s | %(name)s] %(message)s"
+        )
 
     logger.info('Starting...')
     watch_sensors = [sensor for sensor in get_all_sensors(NODE_ID) if sensor.name in OBD_WATCH_COMMANDS]

@@ -61,6 +61,7 @@ class ObdService():
             logger.info('Connected to obd adapter. Registering sensors and starting connection...')
             sensors = [sensor for sensor in watch_sensors if sensor.cmd in self._conn.supported_commands]
             for sensor in sensors:
+                logger.debug(f'Registering sensor {sensor.name}...')
                 sensor.register(HASS_DISCOVERY_PREFIX, client, self._conn)
             self._conn.start()
             logger.info('OBD connection started.')

@@ -5,6 +5,7 @@ import time
 import threading
 import logging
 import sys
+import signal
 
 from sensors import get_all_sensors
 
@@ -18,25 +19,38 @@ OBD_WATCH_COMMANDS = [s.strip() for s in os.environ.get('OBD_WATCH_COMMANDS', ',
     'RPM',
 ])).split(',')]
 NODE_ID = os.environ.get('NODE_ID', 'car')
-CHECK_INTERVAL = float(os.environ.get('CHECK_INTERVAL', '30'))
+CHECK_INTERVAL = float(os.environ.get('CHECK_INTERVAL', '5'))
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')
 
 logger = logging.getLogger(__name__)
 
 class ObdService():
+    def __init__(self):
+        self._should_stop = False
+        self._conn = None
+
     def loop_start(self, mqtt_client, watch_sensors):
-        threading.Thread(target=self._loop, args=(mqtt_client, watch_sensors)).run()
+        threading.Thread(target=self._loop, args=(mqtt_client, watch_sensors)).start()
+
+    def loop_stop(self):
+        self._should_stop = True
+        try:
+            self._conn.stop()
+        except:
+            pass
 
     def _loop(self, mqtt_client, watch_sensors):
-        conn = None
+        self._conn = None
         is_connected = False
-        while True:
+        while not self._should_stop:
             logger.info('Connecting to obd adapter...')
             while not is_connected:
+                if self._should_stop:
+                    return
                 try:
-                    conn = obd.Async()
-                    status = conn.status()
-                    logger.debug(f'conn.status() = {status}')
+                    self._conn = obd.Async()
+                    status = self._conn.status()
+                    logger.debug(f'self._conn.status() = {status}')
                     is_connected = status == obd.OBDStatus.CAR_CONNECTED or IGNORE_OBD_CONNECTION
                 except Exception as e:
                     logger.warning('Connecting to obd adapter failed.', exc_info=e)
@@ -45,17 +59,19 @@ class ObdService():
                     time.sleep(CHECK_INTERVAL)
 
             logger.info('Connected to obd adapter. Registering sensors and starting connection...')
-            sensors = [sensor for sensor in watch_sensors if sensor.cmd in conn.supported_commands]
+            sensors = [sensor for sensor in watch_sensors if sensor.cmd in self._conn.supported_commands]
             for sensor in sensors:
-                sensor.register(HASS_DISCOVERY_PREFIX, client, conn)
-            conn.start()
+                sensor.register(HASS_DISCOVERY_PREFIX, client, self._conn)
+            self._conn.start()
             logger.info('OBD connection started.')
 
             while is_connected:
+                if self._should_stop:
+                    return
                 time.sleep(CHECK_INTERVAL)
                 try:
-                    status = conn.status()
-                    logger.debug(f'conn.status() = {status}')
+                    status = self._conn.status()
+                    logger.debug(f'self._conn.status() = {status}')
                     is_connected = status == obd.OBDStatus.CAR_CONNECTED or IGNORE_OBD_CONNECTION
                 except Exception as e:
                     logger.warning('Disconnceted from obd adapter due to an exception.', exc_info=e)
@@ -90,4 +106,10 @@ if __name__ == '__main__':
     obd_service.loop_start(client, watch_sensors)
 
     logger.info('MQTT is ready.')
-    client.loop_forever()
+    client.loop_start()
+
+    def stop(signum, frame):
+        logger.info('Shutting down...')
+        obd_service.loop_stop()
+        client.loop_stop()
+    signal.signal(signal.SIGINT, stop)

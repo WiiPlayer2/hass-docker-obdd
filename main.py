@@ -58,6 +58,9 @@ class ObdService():
                     logger.debug(f'Retrying obd connection in {CHECK_INTERVAL} seconds...')
                     time.sleep(CHECK_INTERVAL)
 
+            logger.debug('Supported commands:')
+            for cmd in self._conn.supported_commands:
+                logger.debug(repr(cmd))
             logger.info('Connected to obd adapter. Registering sensors and starting connection...')
             sensors = [sensor for sensor in watch_sensors if sensor.cmd in self._conn.supported_commands]
             for sensor in sensors:
@@ -77,8 +80,6 @@ class ObdService():
                 except Exception as e:
                     logger.warning('Disconnceted from obd adapter due to an exception.', exc_info=e)
                     is_connected = False
-
-
 
 if __name__ == '__main__':
     logging.basicConfig(

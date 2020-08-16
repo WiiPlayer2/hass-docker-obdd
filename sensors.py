@@ -38,6 +38,7 @@ class ObdSensor(abc.ABC):
 
     def register(self, discovery_prefix: str, mqtt_client: MqttClient, obd: OBDAsync):
         def callback(value):
+            logger.debug(f'Incoming value for {self.cmd} -> {value}')
             try:
                 self._process_value(mqtt_client, value)
             except Exception as e:
@@ -102,7 +103,7 @@ class RawObdSensor(ObdSensor):
         super().__init__(node_id, name, cmd)
 
     def _process_value(self, mqtt_client: MqttClient, value):
-        mqtt_client.publish(self._state_topic, value)
+        mqtt_client.publish(self._state_topic, str(value))
     
     def _get_discovery_info(self, discovery_prefix: str):
         return DiscoveryInfo(

@@ -1,7 +1,7 @@
 import abc
 import json
 import logging
-from obd import commands as cmds, OBDCommand, Unit as units, Async as OBDAsync
+from obd import commands as cmds, OBDCommand, Unit as units, Async as OBDAsync, OBDResponse
 from paho.mqtt.client import Client as MqttClient
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class ObdSensor(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def _process_value(self, mqtt_client: MqttClient, value):
+    def _process_value(self, mqtt_client: MqttClient, value: OBDResponse):
         pass
 
     @property
@@ -73,8 +73,8 @@ class UnitObdSensor(ObdSensor):
         self._unit = unit
         self._device_class = device_class
     
-    def _process_value(self, mqtt_client: MqttClient, value):
-        mqtt_client.publish(self._state_topic, value.magnitude)
+    def _process_value(self, mqtt_client: MqttClient, value: OBDResponse):
+        mqtt_client.publish(self._state_topic, value.value.magnitude)
 
     def _get_discovery_info(self, discovery_prefix: str):
         payload = {
@@ -102,7 +102,7 @@ class RawObdSensor(ObdSensor):
     def __init__(self, node_id: str, name: str, cmd: OBDCommand):
         super().__init__(node_id, name, cmd)
 
-    def _process_value(self, mqtt_client: MqttClient, value):
+    def _process_value(self, mqtt_client: MqttClient, value: OBDResponse):
         mqtt_client.publish(self._state_topic, str(value))
     
     def _get_discovery_info(self, discovery_prefix: str):
@@ -126,6 +126,6 @@ class RawObdSensor(ObdSensor):
 def get_all_sensors(node_id: str):
     return [
         RawObdSensor(node_id, 'ELM_VERSION', cmds.ELM_VERSION),
-        RawObdSensor(node_id, 'ELM_VOLTAGE', cmds.ELM_VOLTAGE),
+        UnitObdSensor(node_id, 'ELM_VOLTAGE', cmds.ELM_VOLTAGE, units.volt),
         UnitObdSensor(node_id, 'RPM', cmds.RPM, units.rpm),
     ]

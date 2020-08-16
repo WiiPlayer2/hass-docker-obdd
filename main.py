@@ -4,9 +4,9 @@ import os
 import time
 import threading
 
-from commands import all_commands
+from commands import get_all_sensors
 
-IGNORE_OBD_CONNECTION = os.environ.get('IGNORE_OBD_CONNECTION', 'True') == 'Tru'
+IGNORE_OBD_CONNECTION = os.environ.get('IGNORE_OBD_CONNECTION', 'True') == 'True'
 MQTT_BROKER = os.environ.get('MQTT_BROKER', '192.168.1.2')
 MQTT_CLIENT_NAME = os.environ.get('MQTT_CLIENT_NAME', 'obd-service')
 HASS_DISCOVERY_PREFIX = os.environ.get('HASS_DISCOVERY_PREFIX', 'homeassistant')
@@ -37,7 +37,7 @@ class ObdService():
 
             cmds = [cmd for cmd in watch_commands if cmd.cmd in conn.supported_commands]
             for cmd in cmds:
-                cmd.register(HASS_DISCOVERY_PREFIX, NODE_ID, client, conn)
+                cmd.register(HASS_DISCOVERY_PREFIX, client, conn)
             conn.start()
 
             while is_connected:
@@ -50,7 +50,7 @@ class ObdService():
 
 
 if __name__ == '__main__':
-    watch_commands = [cmd for cmd in all_commands if cmd.name in OBD_WATCH_COMMANDS]
+    watch_commands = [cmd for cmd in get_all_sensors(NODE_ID) if cmd.name in OBD_WATCH_COMMANDS]
 
     client = mqtt.Client(MQTT_CLIENT_NAME)
     client.username_pw_set('car', 'car')

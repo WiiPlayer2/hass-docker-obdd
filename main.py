@@ -80,7 +80,7 @@ class ObdService():
 if __name__ == '__main__':
     logging.basicConfig(
         level=LOG_LEVEL,
-        format="[%(asctime)s | %(name)s] %(message)s"
+        format="[%(asctime)s | %(name)s | %(levelname)s] %(message)s"
         )
 
     logger.info('Starting...')

@@ -1,7 +1,10 @@
 import abc
 import json
+import logging
 from obd import commands as cmds, OBDCommand, Unit as units, Async as OBDAsync
 from paho.mqtt.client import Client as MqttClient
+
+logger = logging.getLogger(__name__)
 
 class DiscoveryInfo():
     def __init__(self, discovery_prefix: str, node_id: str, object_id: str, component: str, payload: dict):
@@ -35,7 +38,10 @@ class ObdSensor(abc.ABC):
 
     def register(self, discovery_prefix: str, mqtt_client: MqttClient, obd: OBDAsync):
         def callback(value):
-            self._process_value(mqtt_client, value)
+            try:
+                self._process_value(mqtt_client, value)
+            except Exception as e:
+                logger.error(f'Error while processing value. ({self.cmd} -> {value})', exc_info=e)
         info = self._get_discovery_info(discovery_prefix)
         mqtt_client.publish(info.topic, json.dumps(info.payload))
         obd.watch(self._cmd, callback)

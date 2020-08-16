@@ -57,7 +57,7 @@ class UnitObdSensor(ObdSensor):
         self._device_class = device_class
     
     def _process_value(self, node_id: str, mqtt_client: MqttClient, value):
-        mqtt_client.publish(f'obd/{self._uid(node_id)}', value)
+        mqtt_client.publish(f'obd/{self._uid(node_id)}', value.magnitude)
 
     def _get_discovery_info(self, discovery_prefix: str, node_id: str):
         payload = {

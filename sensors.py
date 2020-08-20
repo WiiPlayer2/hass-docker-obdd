@@ -44,7 +44,7 @@ class ObdSensor(abc.ABC):
             except Exception as e:
                 logger.error(f'Error while processing value. ({self.cmd} -> {value})', exc_info=e)
         info = self._get_discovery_info(discovery_prefix)
-        mqtt_client.publish(info.topic, json.dumps(info.payload))
+        mqtt_client.publish(info.topic, json.dumps(info.payload), retain=True)
         obd.watch(self._cmd, callback)
 
     @abc.abstractmethod

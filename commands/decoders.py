@@ -7,6 +7,11 @@ logger = logging.getLogger(__name__)
 # https://docs.google.com/spreadsheets/d/1Mmlb-SHATQBuTa_3tORdKQatSbvdIouEdMZcasXJghk/edit#gid=2
 
 def _log(name, messages):
+    representation = repr(messages)
+    try:
+        representation = json.dumps(messages, indent=2)
+    except:
+        pass
     logger.debug(f'{name} <- {json.dumps(messages, indent=2)}')
 
 def fuel_level(messages):

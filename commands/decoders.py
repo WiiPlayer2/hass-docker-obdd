@@ -1,15 +1,25 @@
 import logging
 import json
+from typing import List
 from obd import Unit as units
+from obd.protocols.protocol import Message
 
 logger = logging.getLogger(__name__)
 
 # https://docs.google.com/spreadsheets/d/1Mmlb-SHATQBuTa_3tORdKQatSbvdIouEdMZcasXJghk/edit#gid=2
 
-def _log(name, messages):
-    representation = repr(messages)
+def _log(name, messages: List[Message]):
+    data = messages
     try:
-        representation = json.dumps(messages, indent=2)
+        data = [{
+            'hex': str(m.hex()),
+            'raw': str(m.raw()),
+        } for m in messages]
+    except:
+        pass
+    representation = repr(data)
+    try:
+        representation = json.dumps(data, indent=2)
     except:
         pass
     logger.debug(f'{name} <- {representation}')

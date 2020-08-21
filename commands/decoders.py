@@ -12,7 +12,7 @@ def _log(name, messages):
         representation = json.dumps(messages, indent=2)
     except:
         pass
-    logger.debug(f'{name} <- {json.dumps(messages, indent=2)}')
+    logger.debug(f'{name} <- {representation}')
 
 def fuel_level(messages):
     _log('fuel_level', messages)

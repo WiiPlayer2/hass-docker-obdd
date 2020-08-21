@@ -58,7 +58,7 @@ class ObdService():
             logger.debug('Supported commands:')
             for cmd in self._conn.supported_commands:
                 logger.debug(repr(cmd))
-            self._conn.supported_commands |= set(commands.custom_commands)
+            self._conn.supported_commands |= set(commands.custom_commands.all)
             logger.info('Connected to obd adapter. Registering sensors and starting connection...')
             sensors = [sensor for sensor in watch_sensors if sensor.cmd in self._conn.supported_commands]
             for sensor in sensors:

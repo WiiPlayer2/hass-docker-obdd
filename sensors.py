@@ -3,6 +3,7 @@ import json
 import logging
 from obd import commands as cmds, OBDCommand, Unit as units, Async as OBDAsync, OBDResponse
 from paho.mqtt.client import Client as MqttClient
+from commands import custom_commands
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +24,11 @@ class DiscoveryInfo():
         return self._payload
 
 class ObdSensor(abc.ABC):
-    def __init__(self, node_id: str, name: str, cmd: OBDCommand):
+    def __init__(self, node_id: str, name: str, cmd: OBDCommand, component: str):
         self._node_id = node_id
         self._name = name
         self._cmd = cmd
+        self._component = component
 
     @property
     def name(self):
@@ -47,8 +49,28 @@ class ObdSensor(abc.ABC):
         mqtt_client.publish(info.topic, json.dumps(info.payload), retain=True)
         obd.watch(self._cmd, callback)
 
-    @abc.abstractmethod
     def _get_discovery_info(self, discovery_prefix: str) -> DiscoveryInfo:
+        payload = {
+                'state_topic': self._state_topic,
+                'name': self._entity_name,
+                'unique_id': self._uid,
+                'device': {
+                    'identifiers': [
+                        f'obd_{self._node_id}',
+                    ],
+                    'name': 'OBD',
+                },
+            }
+        payload.update(self._get_additional_discovery_configuration())
+        return DiscoveryInfo(
+            discovery_prefix,
+            self._node_id,
+            self._uid,
+            self._component,
+            payload)
+
+    @abc.abstractmethod
+    def _get_additional_discovery_configuration(self) -> dict:
         pass
 
     @abc.abstractmethod
@@ -57,7 +79,7 @@ class ObdSensor(abc.ABC):
 
     @property
     def _uid(self):
-        return f'{self._node_id}_{self._cmd.name}_{self._cmd.header.decode()}{self._cmd.command.decode()}'
+        return f'{self._node_id}_{self.name}_{self._cmd.header.decode()}{self._cmd.command.decode()}'
 
     @property
     def _state_topic(self):
@@ -69,59 +91,39 @@ class ObdSensor(abc.ABC):
 
 class UnitObdSensor(ObdSensor):
     def __init__(self, node_id: str, name: str, cmd: OBDCommand, unit, device_class: str = None):
-        super().__init__(node_id, name, cmd)
+        super().__init__(node_id, name, cmd, 'sensor')
         self._unit = unit
         self._device_class = device_class
     
     def _process_value(self, mqtt_client: MqttClient, value: OBDResponse):
         mqtt_client.publish(self._state_topic, value.value.magnitude)
 
-    def _get_discovery_info(self, discovery_prefix: str):
+    def _get_additional_discovery_configuration(self):
         payload = {
-                'unit_of_measurement': str(self._unit),
-                'state_topic': self._state_topic,
-                'name': self._entity_name,
-                'unique_id': self._uid,
-                'device': {
-                    'identifiers': [
-                        f'obd_{self._node_id}',
-                    ],
-                    'name': 'OBD',
-                },
-            }
+                'unit_of_measurement': '{:~P}'.format(self._unit),
+        }
         if self._device_class is not None:
             payload.update({'device_class': self._device_class})
-        return DiscoveryInfo(
-            discovery_prefix,
-            self._node_id,
-            self._uid,
-            'sensor',
-            payload)
+        return payload
 
 class RawObdSensor(ObdSensor):
     def __init__(self, node_id: str, name: str, cmd: OBDCommand):
-        super().__init__(node_id, name, cmd)
+        super().__init__(node_id, name, cmd, 'sensor')
 
     def _process_value(self, mqtt_client: MqttClient, value: OBDResponse):
         mqtt_client.publish(self._state_topic, str(value))
     
-    def _get_discovery_info(self, discovery_prefix: str):
-        return DiscoveryInfo(
-            discovery_prefix,
-            self._node_id,
-            self._uid,
-            'sensor',
-            {
-                'state_topic': self._state_topic,
-                'name': self._entity_name,
-                'unique_id': self._uid,
-                'device': {
-                    'identifiers': [
-                        f'obd_{self._node_id}',
-                    ],
-                    'name': 'OBD',
-                },
-            })
+    def _get_additional_discovery_configuration(self):
+        return {}
+
+class SelectUnitObdSensor(UnitObdSensor):
+    def __init__(self, node_id: str, name: str, cmd: OBDCommand, unit, selector, device_class: str = None):
+        super().__init__(node_id, name, cmd, unit, device_class)
+        self._selector = selector
+    
+    def _process_value(self, mqtt_client: MqttClient, value: OBDResponse):
+        mqtt_client.publish(self._state_topic, self._selector(value.value))
+
 
 def get_all_sensors(node_id: str):
     return [
@@ -137,4 +139,5 @@ def get_all_sensors(node_id: str):
         UnitObdSensor(node_id, 'ABSOLUTE_LOAD', cmds.ABSOLUTE_LOAD, units.percent),
         UnitObdSensor(node_id, 'RELATIVE_THROTTLE_POS', cmds.RELATIVE_THROTTLE_POS, units.percent),
         UnitObdSensor(node_id, 'HYBRID_BATTERY_REMAINING', cmds.HYBRID_BATTERY_REMAINING, units.percent, 'battery'),
+        UnitObdSensor(node_id, 'FUEL_LEVEL', custom_commands.FUEL_LEVEL, units.liter),
     ]

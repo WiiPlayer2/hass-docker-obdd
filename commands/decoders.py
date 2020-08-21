@@ -26,14 +26,14 @@ def _log(name, messages: List[Message]):
 
 def fuel_level(messages):
     _log('fuel_level', messages)
-    d = messages[0].data[2:]
+    d = messages[0].data
     v = d[0]
     v = v / 2
     return v * units.liter
 
 def hv_battery_status(messages):
     _log('hv_battery_status', messages)
-    d = messages[0].data[2:]
+    d = messages[0].data
     battery_current = (d[0] * 256 + d[1]) / 100 - 327.68
     charge_control = d[2] / 2 - 64
     discharge_control = d[3] / 2 - 64
@@ -53,7 +53,7 @@ def hv_battery_status(messages):
 
 def gforce_and_yaw(messages):
     _log('gforce_and_yaw', messages)
-    d = messages[0].data[2:]
+    d = messages[0].data
     lateral_g = d[0] * 50.02 / 255 - 25.11
     lineal_g = d[1] * 50.02 / 255 - 25.11
     yaw_rate = d[2] - 128
@@ -67,7 +67,7 @@ def gforce_and_yaw(messages):
 
 def state_of_charge(messages):
     _log('state_of_charge', messages)
-    d = messages[0].data[2:]
+    d = messages[0].data
     v = d[0]
     v = v * 20 / 51
     return v * units.percent

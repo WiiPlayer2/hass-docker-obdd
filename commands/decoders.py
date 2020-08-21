@@ -1,14 +1,23 @@
+import logging
+import json
 from obd import Unit as units
+
+logger = logging.getLogger(__name__)
 
 # https://docs.google.com/spreadsheets/d/1Mmlb-SHATQBuTa_3tORdKQatSbvdIouEdMZcasXJghk/edit#gid=2
 
+def _log(name, messages):
+    logger.debug(f'{name} <- {json.dumps(messages, indent=2)}')
+
 def fuel_level(messages):
+    _log('fuel_level', messages)
     d = messages[0].data[2:]
     v = d[0]
     v = v / 2
     return v * units.liter
 
 def hv_battery_status(messages):
+    _log('hv_battery_status', messages)
     d = messages[0].data[2:]
     battery_current = (d[0] * 256 + d[1]) / 100 - 327.68
     charge_control = d[2] / 2 - 64
@@ -28,6 +37,7 @@ def hv_battery_status(messages):
     }
 
 def gforce_and_yaw(messages):
+    _log('gforce_and_yaw', messages)
     d = messages[0].data[2:]
     lateral_g = d[0] * 50.02 / 255 - 25.11
     lineal_g = d[1] * 50.02 / 255 - 25.11
@@ -41,6 +51,7 @@ def gforce_and_yaw(messages):
     }
 
 def state_of_charge(messages):
+    _log('state_of_charge', messages)
     d = messages[0].data[2:]
     v = d[0]
     v = v * 20 / 51

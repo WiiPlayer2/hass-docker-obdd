@@ -7,6 +7,10 @@ from commands import custom_commands
 
 logger = logging.getLogger(__name__)
 
+__unit_symbols__ = {
+    units.percent: '%',
+}
+
 class DiscoveryInfo():
     def __init__(self, discovery_prefix: str, node_id: str, object_id: str, component: str, payload: dict):
         self._prefix = discovery_prefix
@@ -87,7 +91,7 @@ class ObdSensor(abc.ABC):
     
     @property
     def _entity_name(self):
-        return f'{self._node_id}_{self._cmd.name.lower()}'
+        return f'{self._node_id}_{self.name.lower()}'
 
 class UnitObdSensor(ObdSensor):
     def __init__(self, node_id: str, name: str, cmd: OBDCommand, unit, device_class: str = None):
@@ -99,8 +103,15 @@ class UnitObdSensor(ObdSensor):
         mqtt_client.publish(self._state_topic, value.value.magnitude)
 
     def _get_additional_discovery_configuration(self):
+        unit_of_measurement = __unit_symbols__.get(self._unit)
+        if not unit_of_measurement:
+            unit_of_measurement = '{:~P}'.format(self._unit)
+        if not unit_of_measurement:
+            unit_of_measurement = '{:P}'.format(self._unit)
+        if not unit_of_measurement:
+            unit_of_measurement = str(self._unit)
         payload = {
-                'unit_of_measurement': '{:~P}'.format(self._unit),
+                'unit_of_measurement': unit_of_measurement,
         }
         if self._device_class is not None:
             payload.update({'device_class': self._device_class})
@@ -140,4 +151,8 @@ def get_all_sensors(node_id: str):
         UnitObdSensor(node_id, 'RELATIVE_THROTTLE_POS', cmds.RELATIVE_THROTTLE_POS, units.percent),
         UnitObdSensor(node_id, 'HYBRID_BATTERY_REMAINING', cmds.HYBRID_BATTERY_REMAINING, units.percent, 'battery'),
         UnitObdSensor(node_id, 'FUEL_LEVEL', custom_commands.FUEL_LEVEL, units.liter),
+        SelectUnitObdSensor(node_id, 'BATTERY_CURRENT', custom_commands.HV_BATTERY_STATUS, units.ampere, lambda x: x['battery_current'].magnitude),
+        SelectUnitObdSensor(node_id, 'BATTERY_CHARGE', custom_commands.HV_BATTERY_STATUS, units.kilowatt, lambda x: x['charge_control'].magnitude),
+        SelectUnitObdSensor(node_id, 'BATTERY_DISCHARGE', custom_commands.HV_BATTERY_STATUS, units.kilowatt, lambda x: x['discharge_control'].magnitude),
+        UnitObdSensor(node_id, 'STATE_OF_CHARGE', custom_commands.STATE_OF_CHARGE, units.percent, 'battery'),
     ]

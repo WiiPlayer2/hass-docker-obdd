@@ -39,3 +39,9 @@ def gforce_and_yaw(messages):
         'yaw_rate': yaw_rate * units.degree / units.second,
         'steering_angle': steering_angle * units.degree,
     }
+
+def state_of_charge(messages):
+    d = messages[0].data[2:]
+    v = d[0]
+    v = v * 20 / 51
+    return v * units.percent

@@ -8,7 +8,7 @@ from commands import custom_commands
 logger = logging.getLogger(__name__)
 
 __unit_symbols__ = {
-    units.percent: '%',
+    # units.percent: '%',
 }
 
 class DiscoveryInfo():

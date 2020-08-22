@@ -45,7 +45,7 @@ class ObdService():
                 if self._should_stop:
                     return
                 try:
-                    self._conn = obd.Async()
+                    self._conn = obd.Async(delay_cmds=1)
                     status = self._conn.status()
                     logger.debug(f'self._conn.status() = {status}')
                     is_connected = status == obd.OBDStatus.CAR_CONNECTED or IGNORE_OBD_CONNECTION

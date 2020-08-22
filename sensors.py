@@ -155,4 +155,5 @@ def get_all_sensors(node_id: str):
         SelectUnitObdSensor(node_id, 'BATTERY_CHARGE', custom_commands.HV_BATTERY_STATUS, units.kilowatt, lambda x: x['charge_control'].magnitude),
         SelectUnitObdSensor(node_id, 'BATTERY_DISCHARGE', custom_commands.HV_BATTERY_STATUS, units.kilowatt, lambda x: x['discharge_control'].magnitude),
         UnitObdSensor(node_id, 'STATE_OF_CHARGE', custom_commands.STATE_OF_CHARGE, units.percent, 'battery'),
+        SelectUnitObdSensor(node_id, 'STEERING_ANGLE', custom_commands.GFORCE_AND_YAW, units.degree, lambda x: x['steering_angle'].magnitude),
     ]

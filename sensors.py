@@ -138,8 +138,11 @@ class SelectUnitObdSensor(UnitObdSensor):
 
 def get_all_sensors(node_id: str):
     return [
+        # OBD-II Adapter
         RawObdSensor(node_id, 'ELM_VERSION', cmds.ELM_VERSION),
         UnitObdSensor(node_id, 'ELM_VOLTAGE', cmds.ELM_VOLTAGE, units.volt),
+
+        # Mode 01
         UnitObdSensor(node_id, 'ENGINE_LOAD', cmds.ENGINE_LOAD, units.percent),
         UnitObdSensor(node_id, 'INTAKE_PRESSURE', cmds.INTAKE_PRESSURE, units.kilopascal, 'pressure'),
         UnitObdSensor(node_id, 'RPM', cmds.RPM, units.rpm),
@@ -147,13 +150,23 @@ def get_all_sensors(node_id: str):
         UnitObdSensor(node_id, 'INTAKE_TEMP', cmds.INTAKE_TEMP, units.celsius, 'temperature'),
         UnitObdSensor(node_id, 'THROTTLE_POS', cmds.THROTTLE_POS, units.percent),
         UnitObdSensor(node_id, 'RUN_TIME', cmds.RUN_TIME, units.second),
+        UnitObdSensor(node_id, 'FUEL_LEVEL', cmds.FUEL_LEVEL, units.percent),
         UnitObdSensor(node_id, 'ABSOLUTE_LOAD', cmds.ABSOLUTE_LOAD, units.percent),
         UnitObdSensor(node_id, 'RELATIVE_THROTTLE_POS', cmds.RELATIVE_THROTTLE_POS, units.percent),
         UnitObdSensor(node_id, 'HYBRID_BATTERY_REMAINING', cmds.HYBRID_BATTERY_REMAINING, units.percent, 'battery'),
-        UnitObdSensor(node_id, 'FUEL_LEVEL', custom_commands.FUEL_LEVEL, units.liter),
+
+        # Custom
+        UnitObdSensor(node_id, 'FUEL_LEVEL_7C0', custom_commands.FUEL_LEVEL, units.liter),
         SelectUnitObdSensor(node_id, 'BATTERY_CURRENT', custom_commands.HV_BATTERY_STATUS, units.ampere, lambda x: x['battery_current'].magnitude),
         SelectUnitObdSensor(node_id, 'BATTERY_CHARGE', custom_commands.HV_BATTERY_STATUS, units.kilowatt, lambda x: x['charge_control'].magnitude),
         SelectUnitObdSensor(node_id, 'BATTERY_DISCHARGE', custom_commands.HV_BATTERY_STATUS, units.kilowatt, lambda x: x['discharge_control'].magnitude),
-        UnitObdSensor(node_id, 'STATE_OF_CHARGE', custom_commands.STATE_OF_CHARGE, units.percent, 'battery'),
+        SelectUnitObdSensor(node_id, 'DELTA_SOC', custom_commands.HV_BATTERY_STATUS, units.percent, lambda x: x['delta_soc'].magnitude),
+        SelectUnitObdSensor(node_id, 'SOC_IGNITION', custom_commands.HV_BATTERY_STATUS, units.percent, lambda x: x['soc_ign'].magnitude),
+        SelectUnitObdSensor(node_id, 'SOC_MAX', custom_commands.HV_BATTERY_STATUS, units.percent, lambda x: x['soc_max'].magnitude),
+        SelectUnitObdSensor(node_id, 'SOC_MIN', custom_commands.HV_BATTERY_STATUS, units.percent, lambda x: x['soc_min'].magnitude),
+        SelectUnitObdSensor(node_id, 'LATERAL_G', custom_commands.GFORCE_AND_YAW,  units.meter / units.second ** 2, lambda x: x['lateral_g'].magnitude),
+        SelectUnitObdSensor(node_id, 'LINEAL_G', custom_commands.GFORCE_AND_YAW,  units.meter / units.second ** 2, lambda x: x['lineal_g'].magnitude),
+        SelectUnitObdSensor(node_id, 'YAW_RATE', custom_commands.GFORCE_AND_YAW, units.degree / units.second, lambda x: x['yaw_rate'].magnitude),
         SelectUnitObdSensor(node_id, 'STEERING_ANGLE', custom_commands.GFORCE_AND_YAW, units.degree, lambda x: x['steering_angle'].magnitude),
+        UnitObdSensor(node_id, 'STATE_OF_CHARGE', custom_commands.STATE_OF_CHARGE, units.percent, 'battery'),
     ]

@@ -59,9 +59,9 @@ def gforce_and_yaw(messages):
     yaw_rate = d[2] - 128
     steering_angle = ((d[3] * 256 + d[4]) / 10) - 3276.8
     return {
-        'lateral_g': lateral_g * units.meter / units.second ** 2,
-        'lineal_g': lineal_g * units.meter / units.second ** 2,
-        'yaw_rate': yaw_rate * units.degree / units.second,
+        'lateral_g': lateral_g * (units.meter / units.second ** 2),
+        'lineal_g': lineal_g * (units.meter / units.second ** 2),
+        'yaw_rate': yaw_rate * (units.degree / units.second),
         'steering_angle': steering_angle * units.degree,
     }
 
